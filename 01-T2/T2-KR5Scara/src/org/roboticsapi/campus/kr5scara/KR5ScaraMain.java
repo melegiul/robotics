@@ -79,6 +79,7 @@ public class KR5ScaraMain implements RobotInterface {
 		double[] alpha = new double[] {0.0, 0.0, 0.0, 0.0};
 		double[] theta = new double[] {axis[0], axis[1], axis[3], 0.0};
 		double[] d = new double[] {0.312, 0.065, -0.177, axis[2]};
+
 		// set transformation matrix with corresponding DH parameter
 		double[][] firstTransformation = getTransformationMatrix(a[0], alpha[0], d[0], theta[0]);
 		double[][] secondTransformation = getTransformationMatrix(a[1], alpha[1], d[1], theta[1]);
@@ -112,9 +113,10 @@ public class KR5ScaraMain implements RobotInterface {
 	 */
 	@Override
 	public double[][] calculateInverseKinematics(CartesianPosition position) {
-		// TODO add correct implementation
+		
 		double firstArmlength = 0.125;
 		double secondArmLength = 0.225;
+
 		// vectorMagnitude = sqrt(square(x) + square(y))
 		double squaredVector = Math.pow(position.getX(), 2) +
 				Math.pow(position.getY(), 2);
