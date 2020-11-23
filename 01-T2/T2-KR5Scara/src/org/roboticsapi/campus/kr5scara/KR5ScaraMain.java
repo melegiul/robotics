@@ -89,6 +89,7 @@ public class KR5ScaraMain implements RobotInterface {
 		double[][] result = multiplyMatrix(firstTransformation, secondTransformation);
 		result = multiplyMatrix(result, thirdTransformation);
 		result = multiplyMatrix(result, fourthTransformation);
+
 		return new CartesianPosition(result[0][3],
 				result[1][3],
 				result[2][3],
@@ -122,7 +123,7 @@ public class KR5ScaraMain implements RobotInterface {
 				Math.pow(position.getY(), 2);
 		double vectorMagnitude = Math.sqrt(squaredVector);
 		
-		// compute thetaOne
+		// compute thetaTwo
 		// cosine law: sq(c) = sq(a) + sq(b) - 2*a*b*cos(gamma)
 		double cosineThetaTwo = -1 *
 				(vectorMagnitude - Math.pow(firstArmlength, 2) - Math.pow(secondArmLength, 2)) / 
@@ -134,12 +135,13 @@ public class KR5ScaraMain implements RobotInterface {
 		// elbow right
 		double secondThetaTwo = -1 * firstThetaTwo;
 		
-		// compute thetaTwo
+		// compute thetaOne
 		// cosine law
 		double cosineBeta = -1 * (Math.pow(secondArmLength, 2) -
 				Math.pow(firstArmlength, 2) -
 				squaredVector) /
 				(2 * firstArmlength * Math.sqrt(squaredVector));
+
 		double delta = Math.atan2(position.getY(), position.getX());
 		double firstThetaOne = Math.acos(cosineBeta) + delta;
 		double secondThetaOne = delta - Math.acos(cosineBeta);
