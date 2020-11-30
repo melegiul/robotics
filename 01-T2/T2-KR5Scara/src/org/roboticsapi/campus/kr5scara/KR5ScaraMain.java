@@ -36,8 +36,8 @@ public class KR5ScaraMain implements RobotInterface {
 	}
 	
 	private double[][] getTransformationMatrix(double a, double alpha, double d, double theta){
-		double cosTheta = Math.cos(theta);
-		double sinTheta = Math.sin(theta);
+		double cosTheta = Math.cos(Math.toRadians(theta));
+		double sinTheta = Math.sin(Math.toRadians(theta));
 		double cosAlpha = Math.cos(alpha);
 		double sinAlpha = Math.sin(alpha);
 		double[][] transformationMatrix = {
@@ -75,7 +75,8 @@ public class KR5ScaraMain implements RobotInterface {
 	@Override
 	public CartesianPosition calculateDirectKinematics(double[] axis) {
 		// determine DH parameter according to scara350 data sheet
-		double[] a = new double[] {0.125, 0.225, 0.177, 0.0};
+
+		double[] a = new double[] {0.125, 0.225, 0.0, 0.0};
 		double[] alpha = new double[] {0.0, 0.0, 0.0, 0.0};
 		double[] theta = new double[] {axis[0], axis[1], axis[3], 0.0};
 		double[] d = new double[] {0.312, 0.065, -0.177, axis[2]};
@@ -90,10 +91,11 @@ public class KR5ScaraMain implements RobotInterface {
 		result = multiplyMatrix(result, thirdTransformation);
 		result = multiplyMatrix(result, fourthTransformation);
 
+		double angleA = Math.toDegrees(Math.atan2(result[1][0], result[0][0]));
 		return new CartesianPosition(result[0][3],
 				result[1][3],
 				result[2][3],
-				Math.atan2(result[1][0], result[0][0]),
+				angleA,
 				0.0,
 				0.0);
 		// formula for angles B and C
