@@ -36,8 +36,8 @@ public class KR5ScaraMain implements RobotInterface {
 	}
 	
 	private double[][] getTransformationMatrix(double a, double alpha, double d, double theta){
-		double cosTheta = Math.cos(theta);
-		double sinTheta = Math.sin(theta);
+		double cosTheta = Math.cos(Math.toRadians(theta));
+		double sinTheta = Math.sin(Math.toRadians(theta));
 		double cosAlpha = Math.cos(alpha);
 		double sinAlpha = Math.sin(alpha);
 		double[][] transformationMatrix = {
@@ -75,10 +75,12 @@ public class KR5ScaraMain implements RobotInterface {
 	@Override
 	public CartesianPosition calculateDirectKinematics(double[] axis) {
 		// determine DH parameter according to scara350 data sheet
-		double[] a = new double[] {0.125, 0.225, 0.177, 0.0};
+
+		double[] a = new double[] {0.125, 0.225, 0.0, 0.0};
 		double[] alpha = new double[] {0.0, 0.0, 0.0, 0.0};
 		double[] theta = new double[] {axis[0], axis[1], axis[3], 0.0};
 		double[] d = new double[] {0.312, 0.065, -0.177, axis[2]};
+
 		// set transformation matrix with corresponding DH parameter
 		double[][] firstTransformation = getTransformationMatrix(a[0], alpha[0], d[0], theta[0]);
 		double[][] secondTransformation = getTransformationMatrix(a[1], alpha[1], d[1], theta[1]);
@@ -88,10 +90,12 @@ public class KR5ScaraMain implements RobotInterface {
 		double[][] result = multiplyMatrix(firstTransformation, secondTransformation);
 		result = multiplyMatrix(result, thirdTransformation);
 		result = multiplyMatrix(result, fourthTransformation);
+
+		double angleA = Math.toDegrees(Math.atan2(result[1][0], result[0][0]));
 		return new CartesianPosition(result[0][3],
 				result[1][3],
 				result[2][3],
-				Math.atan2(result[1][0], result[0][0]),
+				angleA,
 				0.0,
 				0.0);
 		// formula for angles B and C
@@ -112,15 +116,16 @@ public class KR5ScaraMain implements RobotInterface {
 	 */
 	@Override
 	public double[][] calculateInverseKinematics(CartesianPosition position) {
-		// TODO add correct implementation
+		
 		double firstArmlength = 0.125;
 		double secondArmLength = 0.225;
+
 		// vectorMagnitude = sqrt(square(x) + square(y))
 		double squaredVector = Math.pow(position.getX(), 2) +
 				Math.pow(position.getY(), 2);
 		double vectorMagnitude = Math.sqrt(squaredVector);
 		
-		// compute thetaOne
+		// compute thetaTwo
 		// cosine law: sq(c) = sq(a) + sq(b) - 2*a*b*cos(gamma)
 		double cosineThetaTwo = -1 *
 				(vectorMagnitude - Math.pow(firstArmlength, 2) - Math.pow(secondArmLength, 2)) / 
@@ -132,12 +137,13 @@ public class KR5ScaraMain implements RobotInterface {
 		// elbow right
 		double secondThetaTwo = -1 * firstThetaTwo;
 		
-		// compute thetaTwo
+		// compute thetaOne
 		// cosine law
 		double cosineBeta = -1 * (Math.pow(secondArmLength, 2) -
 				Math.pow(firstArmlength, 2) -
 				squaredVector) /
 				(2 * firstArmlength * Math.sqrt(squaredVector));
+
 		double delta = Math.atan2(position.getY(), position.getX());
 		double firstThetaOne = Math.acos(cosineBeta) + delta;
 		double secondThetaOne = delta - Math.acos(cosineBeta);
@@ -173,16 +179,112 @@ public class KR5ScaraMain implements RobotInterface {
 	@Override
 	public double[][] calculatePTP(double[] start, double[] destination,
 			MotionType type) {
-		// TODO add correct implementation
+		// distance for each axis
+		double[] distance = new double[jointCount];
+		// time stamps when max velocity is reached after period of max acceleration
+		double[] timeToMaxVelocity = new double[jointCount];
+		for(int i=0; i<jointCount; i++) {
+			distance[i] = Math.abs(destination[i] - start[i]);
+			timeToMaxVelocity[i] = jointDescriptions[i].maximumVelocity /
+					jointDescriptions[i].maximumAcceleration;
+		}
+		double[] duration = new double[jointCount];
+		double[] maxVelocity = new double[jointCount];
+		double[] timeToDeceleration = new double[jointCount];
+		double maxDuration = 0;
+		int maxDurationAxis = -1;
+		for(int i=0; i<jointCount; i++) {
+			// according to formula t_end = s/v + v/a
+			// derived from: t_acc = v/a and s = v * (t_end - t_acc)
+			duration[i] = (distance[i] / jointDescriptions[i].maximumVelocity) +
+					(jointDescriptions[i].maximumVelocity / jointDescriptions[i].maximumAcceleration);
+			if (duration[i] < timeToMaxVelocity[i] * 2) {
+				// if the distance is to short to reach max velocity, update max velocity
+				// time to max velocity * 2 = time to accelerate + decelerate from/to max velocity
+				maxVelocity[i] = Math.sqrt(jointDescriptions[i].maximumAcceleration * distance[i]);
+				// set duration according to new max velocity
+				duration[i] = (distance[i] / maxVelocity[i]) +
+						(maxVelocity[i] / jointDescriptions[i].maximumAcceleration);
+				// also adjust time to reach new max velocity
+				timeToMaxVelocity[i] = maxVelocity[i] / jointDescriptions[i].maximumAcceleration;
+			} else {
+				// keep default max velocity
+				maxVelocity[i] = jointDescriptions[i].maximumVelocity;
+			}
+			timeToDeceleration[i] = duration[i] - timeToMaxVelocity[i];
+			if (maxDuration < duration[i]) {
+				// determine axis with longest operation time
+				maxDuration = duration[i];
+				maxDurationAxis = i;
+			}
+		}
+		if (type == MotionType.Synchronous) {
+			// synchronous mode: reduce max velocity of all non-main axis
+			// so that operation time ends for all axis at the same time
+			for(int i=0; i<jointCount; i++) {
+				if (i != maxDurationAxis && maxDuration >= timeToMaxVelocity[i] * 2) {
+					// if i is not main axis, max velocity must be reduced
+					duration[i] = maxDuration;
+					// formula for calculating new max velocity
+					// derived from: t = s/v + v/a
+					maxVelocity[i] = (jointDescriptions[i].maximumAcceleration * duration[i] / 2) -
+							Math.sqrt((Math.pow(jointDescriptions[i].maximumAcceleration, 2) * Math.pow(duration[i], 2) / 4) -
+									(distance[i] * jointDescriptions[i].maximumAcceleration));
+					// adjust time to reach new max velocity
+					timeToMaxVelocity[i] = maxVelocity[i] / jointDescriptions[i].maximumAcceleration;
+					if (duration[i] < timeToMaxVelocity[i] * 2) {
+						// if distance is too short, cut velocity further
+						maxVelocity[i] = Math.sqrt(jointDescriptions[i].maximumAcceleration * distance[i]);
+						// set duration according to new max velocity
+						duration[i] = (distance[i] / maxVelocity[i]) +
+								(maxVelocity[i] / jointDescriptions[i].maximumAcceleration);
+						// also adjust time to reach new max velocity
+						timeToMaxVelocity[i] = maxVelocity[i] / jointDescriptions[i].maximumAcceleration;
+					}
+					timeToDeceleration[i] = duration[i] - timeToMaxVelocity[i];
+				}
+			}
+		}
 
-		// Number of steps for demonstration - calculate proper value
-		int size = 100;
+		// Number of step during operation
+		int size = (int) (maxDuration / 0.01);
 
 		double[][] traj = new double[jointCount][size];
 		for (int i = 0; i < size; i++) {
 			for (int j = 0; j < jointCount; j++) {
-				traj[j][i] = start[j] + (destination[j] - start[j]) * i
-						/ (size - 1);
+				// set movement direction of current joint
+				int sign = -1;
+				if (destination[j] - start[j] > 0) {
+					sign = 1;
+				}
+				if (start[j] != destination[j] && i * 0.01 < duration[j]) {
+					// formulas are only valid if distance is not 0
+					// and if joint has not reached destination
+					if (i * 0.01 <= timeToMaxVelocity[j]) {
+						// compute distance during acceleration
+						// according to: s(t) = 1/2 * a * t * t + s(0)
+						traj[j][i] = start[j] + sign * jointDescriptions[j].maximumAcceleration
+								* Math.pow(i * 0.01, 2) / 2;
+					} else if (i * 0.01 <= timeToDeceleration[j]) {
+						// compute distance during constant velocity
+						// according to: s(t) = v * t - (1/2 * v * v / a)
+						traj[j][i] = start[j] + sign * (maxVelocity[j] * i * 0.01
+								- (Math.pow(maxVelocity[j], 2) / jointDescriptions[j].maximumAcceleration / 2));
+					} else {
+						// compute distance during deceleration
+						// according to: s(t) = v * (t_end - t_acc) - 1/2 * a * pow(t_end - t)
+						double constant = maxVelocity[j] * (duration[j] - timeToMaxVelocity[j]);
+						traj[j][i] = start[j] + sign * (constant - jointDescriptions[j].maximumAcceleration
+								* Math.pow(duration[j] - i * 0.01, 2) / 2);
+					}
+				} else {
+					traj[j][i] = destination[j];
+				}
+				if (i == size - 1) {
+					traj[j][i] = destination[j];
+				}
+//				traj[j][i] = start[j] + (destination[j] - start[j]) * i
+//						/ (size - 1);
 			}
 		}
 
