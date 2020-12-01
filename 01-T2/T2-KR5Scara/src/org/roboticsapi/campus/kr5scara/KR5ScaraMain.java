@@ -123,19 +123,18 @@ public class KR5ScaraMain implements RobotInterface {
 		// vectorMagnitude = sqrt(square(x) + square(y))
 		double squaredVector = Math.pow(position.getX(), 2) +
 				Math.pow(position.getY(), 2);
-		double vectorMagnitude = Math.sqrt(squaredVector);
+		///double vectorMagnitude = Math.sqrt(squaredVector);
 		
 		// compute thetaTwo
 		// cosine law: sq(c) = sq(a) + sq(b) - 2*a*b*cos(gamma)
 		double cosineThetaTwo = -1 *
-				(vectorMagnitude - Math.pow(firstArmlength, 2) - Math.pow(secondArmLength, 2)) / 
+				(squaredVector - Math.pow(firstArmlength, 2) - Math.pow(secondArmLength, 2)) /
 				(2 * firstArmlength * secondArmLength);
-		// since base position is the stretched arm
-		cosineThetaTwo = -1 * (cosineThetaTwo);
 		// elbow left
-		double firstThetaTwo = Math.PI - Math.acos(cosineThetaTwo);
+		double secondThetaTwo = Math.PI - Math.acos(cosineThetaTwo);
+		secondThetaTwo = Math.toDegrees(secondThetaTwo);
 		// elbow right
-		double secondThetaTwo = -1 * firstThetaTwo;
+		double firstThetaTwo = -1 * secondThetaTwo;
 		
 		// compute thetaOne
 		// cosine law
@@ -146,7 +145,9 @@ public class KR5ScaraMain implements RobotInterface {
 
 		double delta = Math.atan2(position.getY(), position.getX());
 		double firstThetaOne = Math.acos(cosineBeta) + delta;
+		firstThetaOne = Math.toDegrees(firstThetaOne);
 		double secondThetaOne = delta - Math.acos(cosineBeta);
+		secondThetaOne = Math.toDegrees(secondThetaOne);
 		
 		// compute thetaThree
 		double firstThetaThree = position.getA() - firstThetaOne - firstThetaTwo;
