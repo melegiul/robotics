@@ -223,11 +223,12 @@ public class KR5ScaraMain implements RobotInterface {
 			// synchronous mode: reduce max velocity of all non-main axis
 			// so that operation time ends for all axis at the same time
 			for(int i=0; i<jointCount; i++) {
-				if (i != maxDurationAxis && maxDuration >= timeToMaxVelocity[i] * 2) {
+				if (i != maxDurationAxis) {
 					// if i is not main axis, max velocity must be reduced
 					duration[i] = maxDuration;
 					// formula for calculating new max velocity
 					// derived from: t = s/v + v/a
+					// => v = (a*t)/2 - sqrt( (sq(a)*sq(t))/4 - s*a)
 					maxVelocity[i] = (jointDescriptions[i].maximumAcceleration * duration[i] / 2) -
 							Math.sqrt((Math.pow(jointDescriptions[i].maximumAcceleration, 2) * Math.pow(duration[i], 2) / 4) -
 									(distance[i] * jointDescriptions[i].maximumAcceleration));
