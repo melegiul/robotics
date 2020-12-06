@@ -259,37 +259,34 @@ public class KR5ScaraMain implements RobotInterface {
 				if (destination[j] - start[j] > 0) {
 					sign = 1;
 				}
-				if (start[j] != destination[j] && i * 0.01 < duration[j]) {
+				if (start[j] != destination[j] && (i+1) * 0.01 < duration[j]) {
 					// formulas are only valid if distance is not 0
 					// and if joint has not reached destination
-					if (i * 0.01 <= timeToMaxVelocity[j]) {
+					if ((i+1) * 0.01 < timeToMaxVelocity[j]) {
 						// compute distance during acceleration
 						// according to: s(t) = 1/2 * a * t * t + s(0)
 						traj[j][i] = start[j] + sign * jointDescriptions[j].maximumAcceleration
-								* Math.pow(i * 0.01, 2) / 2;
-					} else if (i * 0.01 <= timeToDeceleration[j]) {
+								* Math.pow((i+1) * 0.01, 2) / 2;
+					} else if ((i+1) * 0.01 < timeToDeceleration[j]) {
 						// compute distance during constant velocity
 						// according to: s(t) = v * t - (1/2 * v * v / a)
-						traj[j][i] = start[j] + sign * (maxVelocity[j] * i * 0.01
+						traj[j][i] = start[j] + sign * (maxVelocity[j] * (i+1) * 0.01
 								- (Math.pow(maxVelocity[j], 2) / jointDescriptions[j].maximumAcceleration / 2));
 					} else {
 						// compute distance during deceleration
 						// according to: s(t) = v * (t_end - t_acc) - 1/2 * a * pow(t_end - t)
 						double constant = maxVelocity[j] * (duration[j] - timeToMaxVelocity[j]);
 						traj[j][i] = start[j] + sign * (constant - jointDescriptions[j].maximumAcceleration
-								* Math.pow(duration[j] - i * 0.01, 2) / 2);
+								* Math.pow(duration[j] - (i+1) * 0.01, 2) / 2);
 					}
 				} else {
 					traj[j][i] = destination[j];
 				}
-				if (i == size - 1) {
-					traj[j][i] = destination[j];
-				}
-//				traj[j][i] = start[j] + (destination[j] - start[j]) * i
-//						/ (size - 1);
+//				if (i == size) {
+//					traj[j][i] = destination[j];
+//				}
 			}
 		}
-
 		return traj;
 	}
 
