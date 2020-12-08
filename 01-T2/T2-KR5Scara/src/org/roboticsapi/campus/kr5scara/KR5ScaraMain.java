@@ -64,6 +64,21 @@ public class KR5ScaraMain implements RobotInterface {
 	}
 
 	/**
+	 * Check if the values for A1, A2, Z and A4 are within their range
+	 * and that the robot is not in a singularity
+	 */
+	private boolean isValidValues(double[] values){
+		for(int i = 0; i < values.length; i++){
+			if(values[i] < jointDescriptions[i].minimumPosition ||
+					jointDescriptions[i].maximumPosition < values[i] ||
+					Double.isNaN(values[i])) {
+				return false;
+			}
+		}
+		return true;
+	}
+
+	/**
 	 * Calculate the direct kinematics function
 	 * 
 	 * @param axis
@@ -154,11 +169,24 @@ public class KR5ScaraMain implements RobotInterface {
 		double secondThetaThree = position.getA() - secondThetaOne - secondThetaTwo;
 		
 		double dFour = position.getZ() - 0.2;
-		
-		double[][] ret = {
-				new double[] {firstThetaOne, firstThetaTwo, dFour, firstThetaThree},
-				new double[] {secondThetaOne, secondThetaTwo, dFour, secondThetaThree}
-		};
+
+		double[][] ret;
+		double[] firstResult = {firstThetaOne, firstThetaTwo, dFour, firstThetaThree};
+		double[] secondResult = {secondThetaOne, secondThetaTwo, dFour, secondThetaThree};
+
+		if (isValidValues(firstResult)){
+			if (isValidValues(secondResult)){
+				ret = new double[][]{firstResult, secondResult};
+			} else {
+				ret = new double[][]{firstResult};
+			}
+		}
+		else if (isValidValues(secondResult)){
+			ret = new double[][]{secondResult};
+		}
+		else {
+			ret = new double[0][0];
+		}
 
 		return ret;
 	}
