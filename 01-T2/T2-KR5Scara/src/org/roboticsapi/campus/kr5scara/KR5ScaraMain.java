@@ -34,7 +34,21 @@ public class KR5ScaraMain implements RobotInterface {
 		new Dashboard(jointDescriptions, new KR5ScaraMain(),
 				new KR5ScaraVisualization()).setVisible(true);
 	}
-	
+
+	/**
+	 * Calculate the Denavit-Hartenberg matrix
+	 *
+	 * @param a
+	 * 			Translation along the x-axis
+	 * @param alpha
+	 * 			Rotation along the x-axis
+	 * @param d
+	 * 			Translation along the z-axis
+	 * @param theta
+	 * 			Rotation along the z-axis
+	 * @return Two-dimensional array as the result of the matrix multiplication
+	 * 		   of the 2 different rotation matrix and 2 different translation matrix
+	 */
 	private double[][] getTransformationMatrix(double a, double alpha, double d, double theta){
 		double cosTheta = Math.cos(Math.toRadians(theta));
 		double sinTheta = Math.sin(Math.toRadians(theta));
