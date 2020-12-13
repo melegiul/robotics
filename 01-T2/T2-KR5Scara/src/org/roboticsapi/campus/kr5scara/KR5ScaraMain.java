@@ -35,6 +35,7 @@ public class KR5ScaraMain implements RobotInterface {
 				new KR5ScaraVisualization()).setVisible(true);
 	}
 
+
 	/**
 	 * Calculate the Denavit-Hartenberg matrix
 	 *
@@ -63,6 +64,12 @@ public class KR5ScaraMain implements RobotInterface {
 		return transformationMatrix;
 	}
 	
+	/**
+	 * Multiplies matrixA with matrixB and returns result as new matrix
+	 * @param matrixA first factor of multiplication
+	 * @param matrixB second factor of multiplication
+	 * @return result as matrix
+	 */
 	private double[][] multiplyMatrix(double[][] matrixA, double[][] matrixB){
 		double[][] result = new double[matrixA.length][matrixB[0].length];
 		for(int row=0; row<matrixA.length; row++) {
@@ -104,7 +111,6 @@ public class KR5ScaraMain implements RobotInterface {
 	@Override
 	public CartesianPosition calculateDirectKinematics(double[] axis) {
 		// determine DH parameter according to scara350 data sheet
-
 		double[] a = new double[] {0.125, 0.225, 0.0, 0.0};
 		double[] alpha = new double[] {0.0, 0.0, 0.0, 0.0};
 		double[] theta = new double[] {axis[0], axis[1], axis[3], 0.0};
@@ -324,9 +330,6 @@ public class KR5ScaraMain implements RobotInterface {
 				} else {
 					traj[j][i] = destination[j];
 				}
-//				if (i == size) {
-//					traj[j][i] = destination[j];
-//				}
 			}
 		}
 		return traj;

@@ -5,5 +5,7 @@
 	<classpathentry kind="lib" path="lib/org.roboticsapi.campus.dashboard.jar"/>
 	<classpathentry kind="lib" path="lib/org.roboticsapi.feature.visualization-2.0.0-SNAPSHOT.jar"/>
 	<classpathentry kind="lib" path="lib/org.roboticsapi.feature.visualization.rmi-2.0.0-SNAPSHOT.jar"/>
+	<classpathentry kind="lib" path="lib/commons-math3-3.6.1/commons-math3-3.6.1.jar" sourcepath="lib/commons-math3-3.6.1/commons-math3-3.6.1-sources.jar"/>
+	<classpathentry kind="lib" path="lib/commons-math3-3.6.1/commons-math3-3.6.1-sources.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
